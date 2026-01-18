@@ -1,4 +1,4 @@
-# expresso
+# Expresso ☕️
 
 Lightweight 3D physics engine for Gleam game development.
 
