@@ -7,7 +7,7 @@ repository = { type = "github", user = "renatillas", repo = "expresso" }
 [dependencies]
 gleam_stdlib = ">= 0.44.0 and < 2.0.0"
 vec = ">= 3.0.3 and < 4.0.0"
-spatial = { path = "../spatial" }
+spatial = ">= 1.0.0 and < 2.0.0"
 quaterni = ">= 1.0.0 and < 2.0.0"
 
 [dev-dependencies]
