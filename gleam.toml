@@ -1,0 +1,16 @@
+name = "expresso"
+version = "0.1.0"
+description = "Lightweight 2D physics engine for Gleam game development"
+licences = ["MIT"]
+repository = { type = "github", user = "renatillas", repo = "expresso" }
+
+[dependencies]
+gleam_stdlib = ">= 0.44.0 and < 2.0.0"
+vec = ">= 3.0.3 and < 4.0.0"
+spatial = { path = "../spatial" }
+quaterni = ">= 1.0.0 and < 2.0.0"
+
+[dev-dependencies]
+gleeunit = ">= 1.0.0 and < 2.0.0"
+gleamy_bench = ">= 0.6.0 and < 1.0.0"
+simplifile = ">= 1.0.0 and < 3.0.0"

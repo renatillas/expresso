@@ -1,0 +1,20 @@
+╔══════════════════════════════════════════════════════════════╗
+║        Expresso Physics Engine Benchmark Results            ║
+╚══════════════════════════════════════════════════════════════╝
+
+Comparing BVH update strategies for physics simulation
+
+Input               Function                       IPS           Min          Mean           Max
+50 bodies           rebuild_and_detect      10963.0417        0.0766        0.0912        0.1879
+100 bodies          rebuild_and_detect       3744.7966        0.2532        0.2670        0.4130
+200 bodies          rebuild_and_detect       1209.9308        0.7774        0.8264        3.3676
+500 bodies          rebuild_and_detect        255.3786        3.6367        3.9157        4.6761
+Input               Function                       IPS           Min          Mean           Max
+50 bodies           build_id_bvh           180110.9887        0.0045        0.0055        1.1404
+50 bodies           refit_after_move      1064615.8585        0.0006        0.0009        8.4429
+100 bodies          build_id_bvh            76738.3230        0.0112        0.0130        0.4235
+100 bodies          refit_after_move       568371.5550        0.0014        0.0017        0.1708
+200 bodies          build_id_bvh            31664.4737        0.0267        0.0315        0.1260
+200 bodies          refit_after_move       292425.1023        0.0027        0.0034        0.0977
+500 bodies          build_id_bvh            10473.9055        0.0804        0.0954        0.2854
+500 bodies          refit_after_move       108653.7066        0.0073        0.0092       19.6450
