@@ -274,7 +274,3 @@ gleam docs build     # Generate docs
 ## License
 
 MIT
-
-## Credits
-
-Inspired by Position Based Dynamics (Müller et al.), Box2D (Erin Catto), Nature of Code (Daniel Shiffman), and the Gleam spatial library.
