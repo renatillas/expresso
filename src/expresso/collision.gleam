@@ -181,11 +181,13 @@ fn detect_collisions_with_bvh_internal(
   body_list: List(#(id, Body(id))),
   bvh_tree: bvh.BVH(#(id, Body(id))),
 ) -> List(Contact(id)) {
+  // Calculate max radius once, not per body (O(n) instead of O(n²))
+  let max_radius = calculate_max_radius(body_list)
+
   list.flat_map(body_list, fn(pair_a) {
     let #(id_a, body_a) = pair_a
 
     // Query radius = bounding radius + max possible other body radius
-    let max_radius = calculate_max_radius(body_list)
     let query_radius = body.bounding_radius(body_a) +. max_radius
     let pos_3d = vec3.Vec3(body_a.position.x, body_a.position.y, 0.0)
 
@@ -233,10 +235,12 @@ fn detect_collisions_with_bvh_new(
   body_list: List(#(id, Body(id))),
   bvh_tree: BVH(id),
 ) -> List(Contact(id)) {
+  // Calculate max radius once, not per body (O(n) instead of O(n²))
+  let max_radius = calculate_max_radius(body_list)
+
   list.flat_map(body_list, fn(pair_a) {
     let #(id_a, body_a) = pair_a
 
-    let max_radius = calculate_max_radius(body_list)
     let query_radius = body.bounding_radius(body_a) +. max_radius
     let pos_3d = vec3.Vec3(body_a.position.x, body_a.position.y, 0.0)
 
@@ -265,10 +269,12 @@ fn detect_collisions_with_grid_new(
   body_list: List(#(id, Body(id))),
   grid_index: Grid(id),
 ) -> List(Contact(id)) {
+  // Calculate max radius once, not per body (O(n) instead of O(n²))
+  let max_radius = calculate_max_radius(body_list)
+
   list.flat_map(body_list, fn(pair_a) {
     let #(id_a, body_a) = pair_a
 
-    let max_radius = calculate_max_radius(body_list)
     let query_radius = body.bounding_radius(body_a) +. max_radius
     let pos_3d = vec3.Vec3(body_a.position.x, body_a.position.y, 0.0)
 
@@ -435,28 +441,24 @@ pub fn find_nearest(
 /// Analyze body distribution to determine if uniform
 ///
 /// Returns #(is_uniform, average_bounding_radius)
+/// Optimized: Single pass to compute count, total_radius, and positions
 pub fn analyze_distribution(bodies: Dict(id, Body(id))) -> #(Bool, Float) {
-  let body_list = dict.to_list(bodies)
-  let count = list.length(body_list)
+  // Single pass: compute count, total_radius, and positions simultaneously
+  let #(count, total_radius, positions) =
+    dict.fold(bodies, #(0, 0.0, []), fn(acc, _id, body) {
+      let #(n, sum_radius, pos_list) = acc
+      #(n + 1, sum_radius +. body.bounding_radius(body), [
+        body.position,
+        ..pos_list
+      ])
+    })
 
   case count {
     0 -> #(False, 1.0)
     _ -> {
-      // Calculate average bounding radius
-      let total_radius =
-        list.fold(body_list, 0.0, fn(sum, pair) {
-          let #(_id, body) = pair
-          sum +. body.bounding_radius(body)
-        })
       let avg_radius = total_radius /. int.to_float(count)
 
       // Calculate variance in spacing
-      let positions =
-        list.map(body_list, fn(pair) {
-          let #(_id, body) = pair
-          body.position
-        })
-
       let variance = calculate_position_variance(positions)
 
       // If variance is low relative to world size, distribution is uniform
@@ -468,18 +470,21 @@ pub fn analyze_distribution(bodies: Dict(id, Body(id))) -> #(Bool, Float) {
 }
 
 /// Calculate variance in positions (simplified)
+/// Optimized: 2 passes instead of 3 (combined count+sum in first pass)
 fn calculate_position_variance(positions: List(Vec3(Float))) -> Float {
-  case list.length(positions) {
+  // First pass: calculate count and sum simultaneously
+  let #(n, sum) =
+    list.fold(positions, #(0, vec3.Vec3(0.0, 0.0, 0.0)), fn(acc, pos) {
+      let #(count, sum_vec) = acc
+      #(count + 1, vec3f.add(sum_vec, pos))
+    })
+
+  case n {
     0 -> 0.0
-    n -> {
-      // Calculate centroid
-      let sum =
-        list.fold(positions, vec3.Vec3(0.0, 0.0, 0.0), fn(acc, pos) {
-          vec3f.add(acc, pos)
-        })
+    _ -> {
       let centroid = vec3f.scale(sum, 1.0 /. int.to_float(n))
 
-      // Calculate average squared distance from centroid
+      // Second pass: calculate average squared distance from centroid
       let total_sq_dist =
         list.fold(positions, 0.0, fn(acc, pos) {
           let dist = vec3f.distance(centroid, pos)
@@ -492,11 +497,11 @@ fn calculate_position_variance(positions: List(Vec3(Float))) -> Float {
 }
 
 /// Calculate world bounds for Grid creation
+/// Optimized: Single pass with dict.fold instead of dict.to_list + list.fold
 pub fn calculate_world_bounds(bodies: Dict(id, Body(id))) -> Collider {
-  let body_list = dict.to_list(bodies)
-
-  case body_list {
-    [] -> {
+  // Check if empty using dict.size (O(1)) instead of converting to list
+  case dict.size(bodies) {
+    0 -> {
       // Default bounds for empty world
       collider.box(
         min: vec3.Vec3(-100.0, -100.0, -1.0),
@@ -509,9 +514,8 @@ pub fn calculate_world_bounds(bodies: Dict(id, Body(id))) -> Collider {
       let init_max = vec3.Vec3(-1.0e10, -1.0e10, -1.0e10)
 
       let #(min_3d, max_3d) =
-        list.fold(body_list, #(init_min, init_max), fn(acc, pair) {
+        dict.fold(bodies, #(init_min, init_max), fn(acc, _id, body) {
           let #(current_min, current_max) = acc
-          let #(_id, body) = pair
 
           let radius = body.bounding_radius(body)
           let body_min =

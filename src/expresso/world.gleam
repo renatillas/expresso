@@ -738,13 +738,12 @@ fn auto_select_strategy(
 }
 
 /// Build a BVH spatial index from bodies (stores IDs for efficient updates)
+/// Optimized: Single pass with dict.fold instead of dict.to_list + list.map
 fn build_bvh_index(bodies: Dict(id, Body(id))) -> SpatialIndex(id) {
   let items =
-    dict.to_list(bodies)
-    |> list.map(fn(pair) {
-      let #(id, body) = pair
+    dict.fold(bodies, [], fn(acc, id, body) {
       let pos_3d = vec3.Vec3(body.position.x, body.position.y, 0.0)
-      #(pos_3d, id)
+      [#(pos_3d, id), ..acc]
     })
 
   let assert Ok(tree) = bvh.from_items(items, max_leaf_size: 8)

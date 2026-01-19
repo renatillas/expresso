@@ -1,5 +1,5 @@
 name = "expresso"
-version = "1.0.0"
+version = "1.0.1"
 description = "Lightweight 3D physics engine for Gleam game development"
 licences = ["MIT"]
 repository = { type = "github", user = "renatillas", repo = "expresso" }
